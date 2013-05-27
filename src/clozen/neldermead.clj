@@ -33,7 +33,8 @@
   (cond (empty? init-point) {:vertex [] :cost (cost-func [])}
 
   :else
-  (let [step-size 1
+  (let [cost-func (memoize cost-func)
+        step-size 1
         ;nelder-mead parameters
         alpha 1.0
         beta 0.5
@@ -42,6 +43,7 @@
         simplex (init-simplex init-point step-size)]
     (loop [simplex-costs (mapv (fn [vertex] {:vertex vertex :cost (cost-func vertex)}) simplex)
            iter-num 0 translation "NOTHING"]
+      
       ; Ordering: find worst, second worst and best point
       ; simplex-costs [{:vertex [.2 .3 .4] :cost .35} {...} ...]
       ; TODO: Check termination conditions first
