@@ -9,6 +9,19 @@
     []
     (concat [(f (first coll) (second coll))] (between f (rest coll)))))
 
+(defn consistent?
+  [f coll]
+  "is (f x) the same for all x in coll"
+  (every? #(= (f %) (f (first coll))) coll))
+
+(defn sign
+  "Sign of number"
+  [x]
+  (cond
+    (pos? x) 'pos
+    (neg? x) 'neg
+    :else 'no-sign))
+
 ; NOTEST
 (defn lines
 	"returns [(f0 v0),...,(fn vn)]"

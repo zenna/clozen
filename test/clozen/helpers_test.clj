@@ -2,6 +2,12 @@
   (:use clojure.test
         clozen.helpers))
 
+(deftest consistent?-test
+  (let [mixed-data [3 2 1]
+        even-data '(6 2 4)]
+    (is (= (consistent? even? mixed-data) false))
+    (is (= (consistent? odd? even-data) true))))
+
 (deftest extract-test 
   (let [data [{:a nil :b 'data-to-extract} {:a nil :b 'more-data}]]
     (is (= (extract data :b) '(data-to-extract more-data)))))
