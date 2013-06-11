@@ -275,3 +275,10 @@
     (mapv #(assoc % key val) coll)
     :else
     (map #(assoc % key val) coll)))
+
+; NOTEST
+(defn remove-nth
+  "Returns vector with nth value removed"
+  [v i]
+  (vec (concat (subvec v 0 i)
+               (subvec v (inc i)))))

@@ -1,11 +1,11 @@
-(ns clozen.neldermead)
-(use 'clozen.helpers)
+(ns clozen.neldermead
+  (:use clozen.helpers)
+  (:require [incanter.distributions :as dist]))
 
 ;todo
 ; termination tests - start with just number of iterations
 ; convert model into cost function
 ; Figure out ms test
-
 
 ; point [p1 p3 ... pn]
 ; e.g. point = [10 20]
@@ -19,22 +19,16 @@
       (recur (conj simplex (update-in point [dim] #(+ %1 step-size)))
         (inc dim)))))
 
-(defn remove-nth
-  "Returns vector with nth value removed"
-  [v i]
-  (vec (concat (subvec v 0 i)
-               (subvec v (inc i)))))
-
 ; Returns e.g. {:vertex [.2 .3 .4] :cost .35}
 (defn nelder-mead
-  [cost-func init-point]
+  [cost-func init-point num-iters]
   "Perform parameter optimsation with nelder-mead"
   ; Don't bother optimising if there are no parameters
   (cond (empty? init-point) {:vertex [] :cost (cost-func [])}
 
   :else
   (let [cost-func (memoize cost-func)
-        step-size 1
+        step-size 20
         ;nelder-mead parameters
         alpha 1.0
         beta 0.5
@@ -48,7 +42,7 @@
       ; simplex-costs [{:vertex [.2 .3 .4] :cost .35} {...} ...]
       ; TODO: Check termination conditions first
       (if
-        (or (>= iter-num 300)
+        (or (>= iter-num num-iters)
             false)
         (first (vec (sort-by :cost simplex-costs)))
         (let [simplex-costs (vec (sort-by :cost simplex-costs))
@@ -76,7 +70,7 @@
               in-contraction-vertex
                 (vec-f + centroid 
                        (vec-scalar-f * (vec-f - worst-vertex centroid) beta))
-              pvar (print (:cost (nth simplex-costs 0)) " ")
+              pvar (println "nd:Cost" (double (:cost (nth simplex-costs 0))) " ")
               ]
           ; (println translation)
           ; (println "simplex" simplex-costs)
@@ -87,7 +81,8 @@
           ; (println "worst" worst-vertex (cost-func worst-vertex))
           ; (println "best" best-vertex (cost-func best-vertex))
           ; (println "sec-worst-vertex" sec-worst-vertex (cost-func sec-worst-vertex))
-          
+          ; (println "cost" (cost-func best-vertex))
+
           ; Reflect: test if cost of reflection point is between best and second worst
           (cond
             (and (< (cost-func reflection-vertex) (cost-func sec-worst-vertex))
@@ -154,7 +149,23 @@
   (repeatedly)
   (nelder-mead parameters cost-func (repeatedly (count parameters) rand )))
 
+(defn add-noise-to-mean
+  "adds noise in both x y to a polygon"
+  [x std]
+  (dist/draw (dist/normal-distribution x std)))
 
+(defn nelder-mead-noisy
+  [cost-func init-point num-iters]
+  "Perform parameter optimsation with nelder-mead with gaussian noise"
+  (let [num-vals (count init-point)
+        init-stds (vec (repeatedly num-vals #(* (rand) 35)))
+        noisy-cost-f (fn [params]
+                  (let [[real-params stds] (vec (split-at num-vals params))]
+                  (mean
+                  (repeatedly 1000 (fn [] 
+                                  (cost-func (mapv #(add-noise-to-mean %1 %2)
+                                                    real-params stds)))))))]
+    (nelder-mead noisy-cost-f (vec (concat init-point init-stds)) num-iters)))  
 
 ; (def example-model
 ;   {:as-lambda
