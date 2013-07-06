@@ -1,59 +1,8 @@
-(ns clozen.helpers)
+(ns ^{:doc "Helper functions useful for many different problems"
+      :author "Zenna Tavares"}
+  clozen.helpers)
 
-;Helprs
-; NOTEST
-(defn between
-  "Applies f(x,y) to list[n,n+1] to create a list of size count - 1"
-  [f, coll]
-  (if (= (count coll) 1)
-    []
-    (concat [(f (first coll) (second coll))] (between f (rest coll)))))
-
-(defn consistent?
-  [f coll]
-  "is (f x) the same for all x in coll"
-  (every? #(= (f %) (f (first coll))) coll))
-
-(defn sign
-  "Sign of number"
-  [x]
-  (cond
-    (pos? x) 'pos
-    (neg? x) 'neg
-    :else 'no-sign))
-
-; NOTEST
-(defn lines
-	"returns [(f0 v0),...,(fn vn)]"
-		[funcs values]
-		(if (= (count values) 0)
-			[]
-			(concat [((first funcs) (first values))]
-				(lines (rest funcs) (rest values)))))
-
-;FIXME : currently returning only first
-;NOTEST
-(defn max-elements
-  "Returns elements of coll where f(elements) is maximal"
-  [f coll]
-  (let [mapped-coll (map f coll)
-        max-val (apply max mapped-coll)
-        best-index (.indexOf mapped-coll max-val)]
-    [(nth coll best-index)]))
-
-; NOTEST
-(defn extract
-  "For list of maps, extract a key"
-  [coll keyfn]
-  (map (fn [m] (keyfn m)) coll))
-
-; NOTEST
-(defn extract-in
-  "For list of maps, extract a key
-  (extract-in [{:a {:b 'c}} {:a {:b 'd}}] [:a :b])
-  => (c d)"
-  [coll ks]
-  (map (fn [m] (get-in m ks)) coll))
+;; Number helpers
 
 ; NOTEST
 (defn reciprocal
@@ -72,20 +21,6 @@
       (count coll)))
 
 ; NOTEST
-(defn rand-bool
-  "Return uniform over true,false"
-  []
-  (= (rand-int 2) 1))
-
-; NOTEST
-(defn rand-choice
-  "Choice element from coll"
-  [coll]
-  (let [i (rand-int (count coll))]
-    (do 
-      (nth coll i))))
-
-; NOTEST
 (defn NaN?
   "Test if this number is nan"
   [x]
@@ -93,11 +28,125 @@
   (false? (== x x)))
 
 ; NOTEST
-(defn rand-nth-reciprocal-categorical
-  "Categorical distribution - choose element from list. Coll is vector of maps
-  e.g. [{:somedata 'data :weight 10} ...]"
+(defn sign
+  "Sign of number"
+  [x]
+  (cond
+    (pos? x) 'pos
+    (neg? x) 'neg
+    :else 'no-sign))
+
+; NOTEST
+(defn sqr
+  "x^2"
+  [x]
+  (* x x))
+
+;FIXME NEED BETTER ACCOUNT FOR FLOATING POINT PRECISION
+; an equality to use for floating point arithmetic
+; NOTEST
+(defn tolerant=
+  [x y]
+  (< (* (- x y) (- x y)) 0.00001))
+
+;; Collection helpers
+; NOTEST
+(defn between
+  "Applies f(x,y) to list[n,n+1] to create a list of size count - 1"
+  [f, coll]
+  (if (= (count coll) 1)
+    []
+    (concat [(f (first coll) (second coll))] (between f (rest coll)))))
+
+(defn consistent?
+  [f coll]
+  "is (f x) the same for all x in coll"
+  (every? #(= (f %) (f (first coll))) coll))
+
+(defn count=
+  "Are these colls the same size?"
+  [& args]
+  (every? #(= (count (first %)) (count (second %)))
+           (partition 2 1 args)))
+
+(defn normalise
+  [coll]
+  (map #(/ % (sum coll)) coll))
+
+; NOTEST
+(defn lines
+	"returns [(f0 v0),...,(fn vn)]"
+	[funcs values]
+	(if (= (count values) 0)
+		[]
+		(concat [((first funcs) (first values))]
+			(lines (rest funcs) (rest values)))))
+
+(defn counts
+  "Count the elements of a collection"
+  [coll]
+  (loop [counts-map {} coll coll]
+    (cond
+      (empty? coll)
+      counts-map
+
+      (nil? (counts-map (first coll)))
+      (recur (assoc counts-map (first coll) 1) (rest coll))
+
+      :else
+      (recur (update-in counts-map [(first coll)] inc) (rest coll)))))
+
+;FIXME : currently returning only first
+;NOTEST
+(defn max-elements
+  "Returns elements of coll where f(elements) is maximal"
+  [f coll]
+  (let [mapped-coll (map f coll)
+        max-val (apply max mapped-coll)
+        best-index (.indexOf mapped-coll max-val)]
+    [(nth coll best-index)]))
+
+;; Map Helpers
+
+; NOTEST
+(defn extract
+  "For list of maps, extract a key"
+  [coll keyfn]
+  (map (fn [m] (keyfn m)) coll))
+
+; NOTEST
+(defn extract-in
+  "For list of maps, extract a key
+  (extract-in [{:a {:b 'c}} {:a {:b 'd}}] [:a :b])
+  => (c d)"
+  [coll ks]
+  (map (fn [m] (get-in m ks)) coll))
+
+;; Stochastic functions
+; NOTEST
+(defn rand-bool
+  "Return uniform over true,false"
+  []
+  (= (rand-int 2) 1))
+
+(defn categorical
+  "Categorical distribution"
   [coll weights]
-  {:pre [(= (count coll) (count weights))]}
+  (let [sorted-coll (sort-by val < (zipmap coll weights))
+        total-weight (sum (vals sorted-coll))
+        rand-point (rand total-weight)]
+    (loop [coll-loop sorted-coll accum-weight 0.0]
+      (if (>= (+ accum-weight (val (first coll-loop)))
+              rand-point)
+          (key (first coll-loop))
+          (recur (rest coll-loop)
+                 (+ accum-weight (val (first coll-loop))))))))
+
+; NOTEST
+(defn rand-nth-reciprocal-categorical
+  "Categorical distribution using reciprocal of weights"
+  [coll weights]
+  {:pre [(count= coll weights)]}
   (let [coll-weights (zipmap coll weights)
         clean-coll (filter #(not (NaN? (second %))) (seq coll-weights))
         ; clean-coll (filter #(not (NaN? (weight-key %1))) coll)
@@ -120,19 +169,6 @@
 
 ; NOTEST
 (def reciprocal-categorical rand-nth-reciprocal-categorical)
-
-; NOTEST
-(defn sqr
-	"x^2"
-	[x]
-	(* x x))
-
-;FIXME NEED BETTER ACCOUNT FOR FLOATING POINT PRECISION
-; an equality to use for floating point arithmetic
-; NOTEST
-(defn tolerant=
-  [x y]
-  (< (* (- x y) (- x y)) 0.00001))
 
 ; NOTEST
 (defn in? 
