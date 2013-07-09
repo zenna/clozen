@@ -208,7 +208,10 @@
 
 ; NOTEST
 (defn pass
-  "Use output of function eval as one input to a function
+  "Apply a f to each element of coll and pass an object along while
+   doing so.
+   
+   Use output of function eval as one input to a function
    (f init-ip (first coll) to yeild output
     then does (f output (second coll), and so on for all coll"
   [f init-ip coll]
@@ -318,3 +321,12 @@
   [v i]
   (vec (concat (subvec v 0 i)
                (subvec v (inc i)))))
+
+;; Syntactic Sugar Macros
+(defmacro l
+  [& params]
+  {:pre [(odd? (count params))]}
+  (let [args (drop-last params)
+        body (last params)]
+  `(let [~@args]
+     ~body)))

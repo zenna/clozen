@@ -33,6 +33,9 @@
   (is (tolerant= (sum (normalise (repeatedly 10 rand)))
                   1.0))))
 
+(deftest pass-test
+  (pass + [] [4 5 9 8]))
+
 (deftest categorical-test
   (let [objects '[a b c]
         weights [1 2 3]
