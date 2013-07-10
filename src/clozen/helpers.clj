@@ -120,7 +120,9 @@
   (extract-in [{:a {:b 'c}} {:a {:b 'd}}] [:a :b])
   => (c d)"
   [coll ks]
-  (map (fn [m] (get-in m ks)) coll))
+  (cond
+    (list? coll) (map (fn [m] (get-in m ks)) coll)
+    (vector? coll) (mapv (fn [m] (get-in m ks)) coll)))
 
 ;; Stochastic functions
 ; NOTEST
