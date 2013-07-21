@@ -325,6 +325,12 @@
   (vec (concat (subvec v 0 i)
                (subvec v (inc i)))))
 
+; NOTEST
+(defn make-lambda-args
+  "Make a function from an expression with some args"
+  [expr args]
+  (eval (list 'fn args expr)))
+
 ;; Syntactic Sugar Macros
 (defmacro l
   [& params]
