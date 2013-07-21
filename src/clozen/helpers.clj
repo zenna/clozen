@@ -106,6 +106,10 @@
         best-index (.indexOf mapped-coll max-val)]
     [(nth coll best-index)]))
 
+(defn zeros
+  [n]
+  (repeat n 0))
+
 ;; Map Helpers
 
 ; NOTEST
@@ -267,14 +271,11 @@
                        (replace-in-sublist sublist (rest ns) x)))
     x))
 
-; NOTEST
 (defn vec-f
-    "Like merge-with but for vectors"
-  [f v1 v2]
-  (loop [index 0 merged-vec []]
-    (if (= index (count v1))
-      merged-vec
-      (recur (inc index) (conj merged-vec (f (nth v1 index) (nth v2 index)))))))
+  "Appy a function element wise between a number of vectors"
+  [f & args]
+  (apply mapv `(~(fn [& args] (apply f args))
+                    ~@args)))
 
 ; TODO TEST
 (defn vec-scalar-f
