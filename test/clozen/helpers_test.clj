@@ -47,3 +47,6 @@
                          ((zipmap objects (normalise weights)) (key %)))))
            0.1)
       (seq sample-counts))))
+
+(deftest vec-remove-test
+  (is (= (vec-remove [1 2 3 4 5] 2) [1 2 4 5])))

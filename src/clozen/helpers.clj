@@ -96,6 +96,20 @@
       :else
       (recur (update-in counts-map [(first coll)] inc) (rest coll)))))
 
+; NOTEST
+(defn unique-pairs
+  "Returns a list of all the unique pairs of a collection"
+  [coll]
+  (loop [coll coll pairs []]
+    (cond
+    (= (count coll) 1)
+    pairs
+
+    :else
+    (recur (rest coll) (concat pairs
+      (for [x (rest coll)]
+        [(first coll) x]))))))
+
 ;FIXME : currently returning only first
 ;NOTEST
 (defn max-elements
@@ -109,6 +123,50 @@
 (defn zeros
   [n]
   (repeat n 0))
+
+; NOTEST
+; TODO- THIS IS INEFFICIENT< TRAVERSES ENTIRE LIST IN ALL CASES
+(defn max-pred-index
+  "What is index of the value of coll such that (pred coll) is true" 
+  [pred coll]
+  (loop [i 0 max-i nil coll coll]
+    (cond
+      (empty? coll)
+      max-i
+
+      (pred (first coll))
+      (recur (inc i) i (rest coll))
+
+      :else
+      (recur (inc i) max-i (rest coll)))))
+
+(defn max-pred
+  "What is index of the value of coll such that (pred coll) is true" 
+  [pred coll]
+  (loop [coll coll]
+    (cond
+      (empty? coll)
+      nil
+
+      (pred (peek coll))
+      (peek coll)
+      
+      :else
+      (recur (pop coll)))))
+
+(defn min-pred
+  "What is index of the value of coll such that (pred coll) is true" 
+  [pred coll]
+  (loop [coll coll]
+    (cond
+      (empty? coll)
+      nil
+
+      (pred (first coll))
+      (first coll)
+      
+      :else
+      (recur (rest coll)))))
 
 ;; Map Helpers
 
@@ -128,12 +186,28 @@
     (list? coll) (map (fn [m] (get-in m ks)) coll)
     (vector? coll) (mapv (fn [m] (get-in m ks)) coll)))
 
+(defn vec-remove
+  "remove elem from coll"
+  [coll pos]
+  (vec (concat (subvec coll 0 pos) (subvec coll (inc pos)))))
+
 ;; Stochastic functions
 ; NOTEST
 (defn rand-bool
   "Return uniform over true,false"
   []
   (= (rand-int 2) 1))
+
+(defn rand-vec-remove
+  "Uniformly sample elem in coll and remove it"
+  [coll]
+  (let [to-take-i (rand-int (count coll))]
+    [(nth coll to-take-i)
+     (vec-remove coll to-take-i)]))
+
+(defn flip
+  [p]
+  (< (rand) p))
 
 (defn categorical
   "Categorical distribution"
@@ -175,6 +249,8 @@
 
 ; NOTEST
 (def reciprocal-categorical rand-nth-reciprocal-categorical)
+
+
 
 ; NOTEST
 (defn in? 
