@@ -124,6 +124,22 @@
   [n]
   (repeat n 0))
 
+(defn first-index
+  [coll value]
+  (let [i (.indexOf coll value)]
+    (if (= -1 i) 
+        nil
+        value)))
+
+(defn first-index-pred
+  [pred coll]
+  (loop [coll coll i 0]
+    (cond
+      (empty? coll) nil
+      (pred (first coll)) i
+      :else
+      (recur (rest coll) (inc i)))))
+  
 ; NOTEST
 ; TODO- THIS IS INEFFICIENT< TRAVERSES ENTIRE LIST IN ALL CASES
 (defn max-pred-index
@@ -189,6 +205,7 @@
 (defn vec-remove
   "remove elem from coll"
   [coll pos]
+  {:pre [(= clojure.lang.PersistentVector (type coll))]}
   (vec (concat (subvec coll 0 pos) (subvec coll (inc pos)))))
 
 ;; Stochastic functions
