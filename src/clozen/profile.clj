@@ -1,6 +1,6 @@
 (ns ^{:author "Zenna Tavares"
       :doc "Profiling Tools"}
-  relax.profile
+  clozen.profile
   (:use clozen.helpers)
   (:require [taoensso.timbre :as timbre
                         :refer (trace debug info warn error fatal spy with-log-level)])
