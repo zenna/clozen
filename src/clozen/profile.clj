@@ -12,6 +12,17 @@
   [n]
   (iterate (partial * n) 1))
 
+(defn positive-numbers
+  ([] (positive-numbers 1))
+  ([n] (cons n (lazy-seq (positive-numbers (inc n))))))
+
+(defn make-input
+  [n-take & args]
+  (let [x
+        (for [arg args]
+          (take n-take arg))]
+    (apply map list x)))
+
 (defn scaling
   "Scaling performs scale testing on increased input size
   f: the function to be tested
@@ -19,6 +30,7 @@
   inputs: sequence of inputs to input-gen, e.g. length of vector
   n-samples: number of samples for each input size"
   [f input-gen inputs n-samples]
+  (println "ip" inputs)
   (let [results (atom {})
         nested-merge
         (fn [a b]
@@ -42,7 +54,6 @@
 
     (doall
       (for [input inputs]
-           ; (println input)
            (doall (repeatedly n-samples
                        #(profile :info input
                                  (p :whole (f (apply input-gen input))))))))
@@ -69,6 +80,12 @@
 ; How does the runtime scale with the number of dimensions/number of boxes
 ; How does runtime scale with number of output boxes
 ; How does number of calls to expand scale with number of output boxes
+(defn get-scaling-data
+  [results sort-arg prof-keys]
+  (let [sorted-map (sort-by #(nth (key %) sort-arg ) results)]
+    [(mapv #(nth % sort-arg) (vec (keys sorted-map)))
+    (mapv #(double (mean %))
+          (extract-in (vec (vals sorted-map)) prof-keys))]))
 
 (comment
   (defn rand-vector
