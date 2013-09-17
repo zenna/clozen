@@ -96,6 +96,11 @@
       :else
       (recur (update-in counts-map [(first coll)] inc) (rest coll)))))
 
+(defn merge-sets
+  "Merge sets"
+  [sets]
+  (reduce #(reduce conj %1 %2) sets))
+
 ; NOTEST
 (defn unique-pairs
   "Returns a list of all the unique pairs of a collection"
