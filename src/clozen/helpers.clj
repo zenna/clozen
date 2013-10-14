@@ -125,6 +125,48 @@
         best-index (.indexOf mapped-coll max-val)]
     [(nth coll best-index)]))
 
+(defn first-elements
+  "Get the first elements of a set of sets, unless"
+  [sets ignores in-ignore?]
+  (loop [product-tuple [] sets sets]
+    (println "sets " sets)
+    (cond
+      (or (nil? sets) (nil? (first sets)))
+      product-tuple
+
+      :else
+      (if-let [set-op (remove #(in-ignore? product-tuple ignores %) (first sets))]
+        (if (and (coll? set-op) (empty? set-op))
+            product-tuple
+            (recur (conj product-tuple (first set-op)) (next sets)))
+        product-tuple))))
+
+(defn in-ignore?
+  "if I add elem to this build will it become a superset of any of the ignores"
+  [build ignores elem]
+  (some  #(clojure.set/superset? (conj (set build) elem) %) ignores))
+
+(defn cartesian-product-ignore
+  "All the ways to take one item from each sequence, except for banned
+   Ignore is set of terms, where each term belongs to one of the sequences
+   and I don't want these in my cart product"
+  [ignores original-sets]
+  (loop [cart-prod #{} sets original-sets]
+    (let [firsts (first-elements sets ignores in-ignore?)]
+      (print "firsts " firsts "-cart-prod " cart-prod " sets " sets "\n")
+      (cond
+        (zero? (count firsts))
+        cart-prod
+
+        (= (count sets) (count firsts))
+        (recur (conj cart-prod firsts) (update-in sets [(dec (count sets))] next))
+
+        :else
+        (recur cart-prod (assoc
+                           (update-in sets [(dec (count firsts))] next)
+                           (count firsts)
+                           (original-sets (count firsts))))))))
+
 (defn zeros
   [n]
   (repeat n 0))
