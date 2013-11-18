@@ -1,6 +1,7 @@
 (ns ^{:doc "Helper functions useful for many different problems"
       :author "Zenna Tavares"}
-  clozen.helpers)
+  clozen.helpers
+  (:require [clojure.set :refer :all]))
 
 ;; Number helpers
 
@@ -129,7 +130,7 @@
   "Get the first elements of a set of sets, unless"
   [sets ignores in-ignore?]
   (loop [product-tuple [] sets sets]
-    (println "sets " sets)
+    ; (println "sets " sets)
     (cond
       (or (nil? sets) (nil? (first sets)))
       product-tuple
@@ -153,7 +154,7 @@
   [ignores original-sets]
   (loop [cart-prod #{} sets original-sets]
     (let [firsts (first-elements sets ignores in-ignore?)]
-      (print "firsts " firsts "-cart-prod " cart-prod " sets " sets "\n")
+      ; (print "firsts " firsts "-cart-prod " cart-prod " sets " sets "\n")
       (cond
         (zero? (count firsts))
         cart-prod

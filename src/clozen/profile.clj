@@ -1,9 +1,10 @@
 (ns ^{:author "Zenna Tavares"
       :doc "Profiling Tools"}
   clozen.profile
-  (:use clozen.helpers)
+  (:require [clozen.helpers :refer :all])
   (:require [taoensso.timbre :as timbre
-                        :refer (trace debug info warn error fatal spy with-log-level)])
+                             :refer (trace debug info warn
+                                     error fatal spy with-log-level)])
   (:require [taoensso.timbre.profiling :as profiling :refer (p o profile)]))
 
 ; Profiling Data
@@ -24,11 +25,23 @@
     (apply map list x)))
 
 (defn scaling
-  "Scaling performs scale testing on increased input size
-  f: the function to be tested
-  input-gen: generates inputs for f, e.g. gen random vector
-  inputs: sequence of inputs to input-gen, e.g. length of vector
-  n-samples: number of samples for each input size"
+  "Scaling analysis: see how some property of the program (e.g. run time,
+   size of output) varies with some input.
+
+   Automatcally gathers coarse run time information, other properties are
+   required then use the o macro as described in taoensso.timbre.profiling.
+
+   f: the function to be tested
+   input-gen: generates inputs for f, e.g. gen random vector
+   inputs: sequence of inputs to input-gen, e.g. length of vector
+   n-samples: number of samples for each input size
+
+   Will return a map of type
+   {input0 {metric1 {:count [sample0 sample1] :min [sample0 sample1] ...}
+    ...}
+
+
+   "
   [f input-gen inputs n-samples]
   (println "ip" inputs)
   (let [results (atom {})
@@ -59,8 +72,13 @@
                                  (p :whole (f (apply input-gen input))))))))
     @results))
 
+;; Post Processing
 (defn scale-indep-input
-  "Extract data from results map (for plotting perhaps)"
+  "Extract data from scaling results map (for plotting perhaps)
+   prof-keys is a list of list of keys, where each list of keys points to data
+   within the nested results map.
+   e..g [[:taoensso.timbre.profiling/whole :max]
+         [:taoensso.timbre.profiling/whole :count]]"
   [results & prof-keys]
   (reduce-kv
     (fn [pass-map key val]
@@ -68,36 +86,28 @@
     {}
     results))
 
-(defn flatten-input
+(defn flatten-scaling-data
   [data]
-  "Data from scale indep input"
+  "
+   Data - from scale indep input"
   (mapv 
     (fn [i] (vec (reduce concat (mapv #(nth % i) (vals data)))))
-    (range (count (first (vals data))))))
+    (range (count (first (vals data)))))) ; 0, 1,..,n-samples
 
-
-;Possible questions
-; How does the runtime scale with the number of dimensions/number of boxes
-; How does runtime scale with number of output boxes
-; How does number of calls to expand scale with number of output boxes
 (defn get-scaling-data
   [results sort-arg prof-keys]
   (let [sorted-map (sort-by #(nth (key %) sort-arg ) results)]
     [(mapv #(nth % sort-arg) (vec (keys sorted-map)))
     (mapv #(double (mean %))
-          (extract-in (vec (vals sorted-map)) prof-keys))]))
+          (extract-in (vec (vals sorted-map)) prof-keys))]))  
 
 (comment
   (defn rand-vector
     [n]
     (vec (repeatedly n rand)))
 
-  (scaling #(profile :info :sort-time sort) rand-vector (take 20 powers-of-n) 10)
+  (scaling #(profile :info :sort-time sort) rand-vector
+                                            (map vector
+                                                 (take 20 (powers-of-n 2)) 10))
 
-  (scale-indep-input2 r [:n-boxes :mean] [:expand :count]))
-
-; (defn -main []
-;   (scaling sort rand-vector (mapv vector (take 5 (powers-of-n 2))) 2))
-
-; (defn -main []
-;   (profile :info :name (dotimes [n 10] (o :counts count (p :times (range (rand-int 20)))))))
+  (scale-indep-input r [:n-boxes :mean] [:expand :count]))
