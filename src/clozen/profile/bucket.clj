@@ -14,10 +14,13 @@
 ; Different functions in the repository
 ; Different doing or not doing something
 
-(utils/defonce* bucket-config
-  "This map atom controls how bucket testing work.
+;; TODO
+; Integrate this with profile and scaling
+; Profile stores its data in an object called pdata-stats
+; I need to change profile such that it checks for 
 
-   "
+(defonce* bucket-config
+  ; "This map atom controls how bucket testing work."
    (atom {:levels {}
           :seen-buckets []}))
 
@@ -110,9 +113,7 @@
    [bucket-name & terms]
    `(if-let [bucket-pos# (bucket-level ~bucket-name)]
       (do
-        (println @bucket-config)
         (update-seen-bucket! ~bucket-name)
-        (println "pos" bucket-pos# "n terms" ~(count terms))
         (when (= bucket-pos# ~(dec (count terms)))
               (remove-seen-bucket! ~bucket-name))
         (case bucket-pos#
@@ -179,10 +180,7 @@
     A bucket will do this only write to the current bucket list once.
 
     bucket-test will evaluate look at the current bucket and increment
-    from the last downwards, the bucket ids
-
-   "
-   (defmacro bucket-test
+    from the last downwards, the bucket ids"
   [bucket-names & body]
   `(do
     (apply enable-buckets! ~bucket-names)

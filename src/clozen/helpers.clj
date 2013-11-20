@@ -1,7 +1,8 @@
 (ns ^{:doc "Helper functions useful for many different problems"
       :author "Zenna Tavares"}
   clozen.helpers
-  (:require [clojure.set :refer :all]))
+  (:require [clojure.set :refer :all])
+  (:require [clojure.tools.macro :as macro]))
 
 ;; Number helpers
 
@@ -480,3 +481,11 @@
         body (last params)]
   `(let [~@args]
      ~body)))
+
+  (defmacro defonce* ; From taoensso.timbre.utils
+    "Like `clojure.core/defonce` but supports optional docstring and attributes
+    map for name symbol."
+    {:arglists '([name expr])}
+    [name & sigs]
+    (let [[name [expr]] (macro/name-with-attributes name sigs)]
+      `(clojure.core/defonce ~name ~expr)))
