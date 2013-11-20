@@ -1,6 +1,6 @@
 (ns ^{:author "Zenna Tavares"
       :doc "Profiling Tools"}
-  clozen.profile
+  clozen.profile.scaling
   (:require [clozen.helpers :refer :all])
   (:require [taoensso.timbre :as timbre
                              :refer (trace debug info warn
@@ -88,11 +88,14 @@
 
 (defn flatten-scaling-data
   [data]
-  "
+  "Flattens data from scaling and averages over samples.
+   
    Data - from scale indep input"
+  (println "keys are" (keys data))
   (mapv 
-    (fn [i] (vec (reduce concat (mapv #(nth % i) (vals data)))))
-    (range (count (first (vals data)))))) ; 0, 1,..,n-samples
+    (fn [i] (mapv #(mean (nth % i))
+                  (map data (sort (keys data))))) ; vals in sorted key order
+    (range (count (first (vals data)))))) ; 0, 1,..,num-result-types
 
 (defn get-scaling-data
   [results sort-arg prof-keys]
