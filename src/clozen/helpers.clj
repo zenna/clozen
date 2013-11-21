@@ -1,8 +1,9 @@
 (ns ^{:doc "Helper functions useful for many different problems"
       :author "Zenna Tavares"}
   clozen.helpers
-  (:require [clojure.set :refer :all])
-  (:require [clojure.tools.macro :as macro]))
+  (:require [clojure.set :refer :all]
+            [clojure.tools.macro :as macro]
+            [clojure.java.io :refer :all]))
 
 ;; Number helpers
 
@@ -257,6 +258,20 @@
   {:pre [(= clojure.lang.PersistentVector (type coll))]}
   (vec (concat (subvec coll 0 pos) (subvec coll (inc pos)))))
 
+(defn zipmap-count
+  "Like zipmap except instead of providing vals you provide a function
+   which is applied to the count of the keys.
+
+   Convenient for things like:
+   (zipmap-c '[a b c] range) => {c 2, b 1, a 0}
+   (zipmap-c '[a b c] zeros) => {c 0, b 0, a 0}"
+  [coll f]
+  (zipmap coll (f (count coll))))
+
+(defn update-values [m f & args]
+  "Apply a Function To Each Value of a Map"
+  (reduce (fn [r [k v]] (assoc r k (apply f v args))) {} m))
+
 ;; Stochastic functions
 ; NOTEST
 (defn rand-bool
@@ -472,6 +487,16 @@
   "Make a function from an expression with some args"
   [expr args]
   (eval (list 'fn args expr)))
+
+;; IO
+(defn coll-to-file
+  "Writes a collection to a file, one line for each elem"
+  [coll fname]
+  (doall
+    (for [elem coll]
+      (with-open [wrtr (writer fname :append true)]
+          (.write wrtr  (str elem))
+          (.write wrtr "\n")))))
 
 ;; Syntactic Sugar Macros
 (defmacro l

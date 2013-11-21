@@ -39,11 +39,8 @@
    Will return a map of type
    {input0 {metric1 {:count [sample0 sample1] :min [sample0 sample1] ...}
     ...}
-
-
    "
   [f input-gen inputs n-samples]
-  (println "ip" inputs)
   (let [results (atom {})
         nested-merge
         (fn [a b]
@@ -51,10 +48,15 @@
             (partial merge-with
               (partial merge-with cons-conj)) b a))
         appender-fn
-        (fn [{:keys [ap-config level prefix throwable message profile-stats object-stats orig-name] :as args}]
+        (fn [{:keys [ap-config level prefix throwable
+                     message profile-stats object-stats
+                     orig-name] :as args}]
           ; (println "- " (keys args) "**" (vals args) "- \n")
           ; (println "\n" object-stats "\n")
-          (swap! results (partial nested-merge {orig-name (merge profile-stats object-stats)})))]
+          (swap! results 
+                 (partial nested-merge 
+                          {orig-name (merge profile-stats
+                                            object-stats)})))]
 
     (timbre/set-config!
      [:appenders]
@@ -105,12 +107,29 @@
           (extract-in (vec (vals sorted-map)) prof-keys))]))  
 
 (comment
+  (require '[clozen.profile.scaling :refer :all])
+  (require '[taoensso.timbre.profiling :as profiling :refer (p o profile)])
+  (require '[clozen.profile.bucket :refer :all])
+
+  (defn special-sort
+    [coll]
+    (bucket :sort (sort coll) (do (dotimes [_ 100000000] nil)
+                                  (sort coll))))
   (defn rand-vector
     [n]
     (vec (repeatedly n rand)))
 
-  (scaling #(profile :info :sort-time sort) rand-vector
-                                            (map vector
-                                                 (take 20 (powers-of-n 2)) 10))
+  (scaling #(profile :info :sort-timer (sort %))
+            rand-vector
+            (map vector (take 5 (powers-of-n 2)))
+            2)
+
+  (bucket-test [:sort]
+    (scaling special-sort 
+             rand-vector
+             (map vector (take 5 (powers-of-n 2)))
+             2))
+
+
 
   (scale-indep-input r [:n-boxes :mean] [:expand :count]))
