@@ -95,7 +95,7 @@
    Data - from scale indep input"
   (println "keys are" (keys data))
   (mapv 
-    (fn [i] (mapv #(mean (nth % i))
+    (fn [i] (mapv #(double (mean (nth % i)))
                   (map data (sort (keys data))))) ; vals in sorted key order
     (range (count (first (vals data)))))) ; 0, 1,..,num-result-types
 

@@ -9,25 +9,39 @@
   "A whole bunch of twisting the data around into a form suitable for
    matplotlib
 
+   labels:
+   {:x-label 'This is the x axis label'
+    :y-label 'This is the y axis label
+    :title 'This is the title
+    :inspect-legend {inspect-name : 'inspect in legend'}
+    :bucket-legend {bucket-name : 'bucket in legend'}
+
    Outputs data in form
    [[bucket-name-0 inspects-name-0 [x-axis-vals] [y-axis-vals]
     [bucket-name-0 inspects-name-1 [x-axis-vals] [y-axis-vals]
     ...
     [bucket-name-1 inspects-name-0 [x-axis-vals] [y-axis-vals] ...]"
-  [bucket-results & inspects]
-  (for [{bucket :bucket result :result} bucket-results
-               :let [profile-results
-                    (apply (partial scale-indep-input result)
-                           inspects)]]
-    (mapv #(vector
-          ;Name here
-            ; Which bucket is this, which
-            bucket
-            (clojure.string/join " " (nth inspects %2))
-            (vec (flatten (keys profile-results)))
-            %1)
-          (flatten-scaling-data profile-results)
-          (range (count (flatten-scaling-data profile-results))))))
+  [bucket-results axis-legends & inspects]
+  (println "results" bucket-results)
+  (concat
+    [(clojure.string/replace axis-legends "\n" "")]
+    (vec (reduce concat
+      (for [{bucket :bucket result :result} bucket-results
+                   :let [profile-results
+                         (apply (partial scale-indep-input result)
+                               inspects)
+                         bucket-key (first (keys bucket))
+                         bucket-value (first (vals bucket))]]
+        (mapv #(vector
+              ;Name here
+                ; Which bucket is this, which
+                bucket-key
+                bucket-value
+                (clojure.string/join " " (nth inspects %2))
+                (vec (flatten (keys profile-results)))
+                %1)
+              (flatten-scaling-data profile-results)
+              (range (count (flatten-scaling-data profile-results)))))))))
 
 (comment
   (require '[clozen.profile.plot :refer :all])
