@@ -3,7 +3,8 @@
   clozen.helpers
   (:require [clojure.set :refer :all]
             [clojure.tools.macro :as macro]
-            [clojure.java.io :refer :all]))
+            [clojure.java.io :refer :all]
+            [clojure.math.combinatorics :as combo]))
 
 ;; Number helpers
 
@@ -128,16 +129,37 @@
         best-index (.indexOf mapped-coll max-val)]
     [(nth coll best-index)]))
 
-(defn cartesian-product-ignore [ignore-sets colls]
+(defn cartesian-product-ignore-fn [ignore-sets colls]
   (cond (some empty? ignore-sets) () ; prune
         (empty? colls) (list ())     ; base case
         :else                        ; recursive case
         (for [e (first colls)
-              sub-product (cartesian-product-ignore (map (fn [s]
+              sub-product (cartesian-product-ignore-fn (map (fn [s]
                                                            (disj s e))
                                                          ignore-sets)
                                                     (rest colls))]
           (cons e sub-product))))
+
+(defn cartesian-product-ignore
+  [ignore-sets colls]
+  "Remove an item from the set if
+   ignore-sets is vector of sets [#{a b c}#{a b c}]"
+  (let [singleton-ignores (filter #(= (count %) 1) ignore-sets)]
+    (if (zero? (count singleton-ignores))
+        (cartesian-product-ignore-fn ignore-sets colls)
+        (let [filtered-ignores (remove #(= (count %) 1) ignore-sets)
+              filtered-colls
+              (map (fn [elem]
+                   (remove #((reduce clojure.set/union singleton-ignores) %)
+                            elem))
+                   colls)
+              n-terms (apply * (map count filtered-colls))]
+        (println "n-terms after singleton cull" n-terms)
+        (if (< n-terms 500000)
+            (apply combo/cartesian-product filtered-colls)
+            (cartesian-product-ignore-fn
+              filtered-ignores
+              filtered-colls))))))
 
 (defn zeros
   [n]

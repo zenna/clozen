@@ -29,14 +29,9 @@
       (for [{bucket :bucket result :result} bucket-results
                    :let [profile-results
                          (apply (partial scale-indep-input result)
-                               inspects)
-                         bucket-key (first (keys bucket))
-                         bucket-value (first (vals bucket))]]
+                               inspects)]]
         (mapv #(vector
-              ;Name here
-                ; Which bucket is this, which
-                bucket-key
-                bucket-value
+                (vec (seq bucket))
                 (clojure.string/join " " (nth inspects %2))
                 (vec (flatten (keys profile-results)))
                 %1)
@@ -56,7 +51,6 @@
   (defn rand-vector
     [n]
     (vec (repeatedly n rand)))
-
 
   (def bucket-data
     (bucket-test [:sort]

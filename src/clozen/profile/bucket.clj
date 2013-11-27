@@ -4,20 +4,26 @@
   (:require [clozen.helpers :refer :all]))
 
 (defonce* bucket-config
-   "This map atom controls store the state for bucket tetsing"
-   (atom {:forced-options {}
-          :levels {}
-          :seen-buckets []}))
+ "This map atom controls store the state for bucket tetsing"
+ (atom {:seen #{}
+        :forced-options {}
+        :levels {}
+        :seen-buckets []}))
 
 (defn active-bucket? []
   (not (empty? (@bucket-config :levels))))
 
 (defn enable-buckets!
+  "Enables buckets for use with bucket-test, so all their options are explored.
+
+   Bucket-test will ignore buckets that are not enabled and use the default
+   option.  "
   [& names]
   (swap! bucket-config #(merge % {:levels (zipmap-count names zeros)})))
 
 (defn disable-buckets!
   [& names]
+  "Disables buckets - reverse of enable-buckets!"
   (swap! bucket-config
         (fn [config]
           (update-in config [:levels]
@@ -26,6 +32,9 @@
 (defn empty-seen-buckets! []
   (swap! bucket-config #(assoc % :seen-buckets [])))
 
+(defn empty-seen! []
+  (swap! bucket-config #(assoc % :seen #{})))
+
 (defn bucket-levels []
   (@bucket-config :levels))
 
@@ -33,20 +42,29 @@
   [name]
   (get-in @bucket-config [:levels  name]))
 
+(defn bucket-seen
+  []
+  (@bucket-config :seen))  
+
 ; TODO, this should only add to seen once.
 (defn update-seen-bucket!
-  "Update config file with name of seen bucket
+  "Update config atom with name of seen bucket
 
    When using (bucket-test ..) We store all the buckets we encounter in
    current-buckets of the config file.
    This allows bucket-test to decide which buckets to choose next."
   [name]
-  (swap! bucket-config
-        (fn [config] 
-          (if (in? (config :seen-buckets) name) ; Don't add more than once
-              config
-              (update-in config [:seen-buckets] #(conj % name))))))
+  (println "am i even here" @bucket-config)
+  (do
+    (swap! bucket-config
+          (fn [config] 
+            (if ((config :seen) name) ; Don't add more than once
+                config
+                (update-in config [:seen-buckets] #(conj % name)))))
 
+    (swap! bucket-config
+          (fn [config]
+              (update-in config [:seen] #(conj % name))))))
 ;TODO
 (defn remove-seen-bucket!
   [name]
@@ -64,7 +82,7 @@
          (fn [config]
             (update-in config [:levels (last-seen-bucket)] inc))))
 
-(defn buckets-left?
+(defn no-more-buckets?
   []
   (empty? (@bucket-config :seen-buckets)))
 
@@ -74,9 +92,9 @@
   ((@bucket-config :forced-options) bucket-name))
 
 (defn add-forced-options!
-  "Add forced optiosn to config"
+  "Add forced options to config"
   [forced-options]
-  (println "forced options" forced-options)
+  (println "forced-options" forced-options)
   (swap! bucket-config #(merge-with merge % {:forced-options forced-options})))
 
 (defn remove-forced-options!
@@ -104,9 +122,9 @@
   (assert-args
     (vector? named-options) "a vector for its binding"
     (even? (count named-options)) "an even number of forms in binding vector")
-  (let [terms (take-nth 2 (next named-options))
+  (let [pvar (println "penny for your thoughts" named-options)
+        terms (take-nth 2 (next named-options))
         to-groups (partition 2 named-options)
-        x named-options
         named-options (zipmap (map first to-groups) (map second to-groups))]
     `(if-let [bucket-pos# (bucket-level ~bucket-name)]
        (do
@@ -119,7 +137,8 @@
                (list i (nth terms i))))))
 
        (if-let [forced-option# (forced-option ~bucket-name)]
-         (~named-options forced-option#) ; Bucket is forced
+         (case forced-option#
+           ~@(reduce concat (seq named-options))) ; Bucket is forced
          ~(nth terms 0))))) ; The bucket is disabled
 
 (defmacro named-bucket
@@ -140,11 +159,15 @@
 
     (try
       (loop [results# []]
+        (println "Executing bucket-test with options" (bucket-levels))
         (let [result# (do ~@body)
-              bucket-result# {:bucket (bucket-levels)
-                             :result result#}]
+              bucket-result# {:bucket (select-keys (bucket-levels)
+                                                   (bucket-seen))
+                              :result result#}]
+          (println bucket-result#)
+          (empty-seen!)
           (cond
-            (buckets-left?)
+            (no-more-buckets?)
             (conj results# bucket-result#)
 
             :else
