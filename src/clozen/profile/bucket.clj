@@ -188,6 +188,7 @@
   (bucket-test-fn bucket-names forced-options body))
 
 (comment
+  (println "WHY IS IT PRINTING THAT")
   (require '[clozen.profile.bucket :refer :all])
   (macroexpand '(named-bucket :coll-type [:normal-coll coll
                                           :vectorised-coll (vectorise coll)]))
