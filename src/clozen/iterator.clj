@@ -105,14 +105,49 @@
                           #(or (zip/end? %) (zip/branch? %)))]
         (assoc itr :zipped-tree zip-tree)))))
 
+(defn go-to-next
+  [zipped-tree]
+  (loop [zipped-tree zipped-tree]
+    (cond
+      (zip/branch? zipped-tree)
+      (recur (zip/down zipped-tree))
+
+      (nil? (zip/right zipped-tree))
+      (zip/up zipped-tree)
+
+      :else
+      (recur (zip/right zipped-tree)))))
+
 (extend SubtreeLeavesFirstItr
   Itr
   (assoc abstract-zip-itr-impl
     ; Keep doing zip/next until I get to a branch
+    :end?
+    (fn [itr]
+      (nil? ((.zipped-tree itr) 1)))
+
     :step
     (fn [itr]
-      (let [zip-tree
-            (repeat-until zip/next
-                          (.zipped-tree itr)
-                          #(or (zip/end? %) (zip/branch? %)))]
-        (assoc itr :zipped-tree zip-tree)))))
+      (let [zipped-tree (.zipped-tree itr)
+            zip-tree-moved
+            (if (nil? (zip/right zipped-tree))
+                (zip/up zipped-tree)
+                (go-to-next (zip/right zipped-tree)))]
+        (assoc itr :zipped-tree zip-tree-moved)))))
+
+(defn subtree-leaves-first-itr
+  "Subtree iterator factory"
+  [exp]
+  (SubtreeLeavesFirstItr. exp 
+    (-> (zip/zipper coll? seq (fn [_ c] c) exp) zip/down go-to-next)))
+
+(defn iterate-and-print
+  [itr]
+  (loop [itr itr]
+    (when (not (end? itr))
+      (println (realise itr))
+      (recur (step itr)))))
+
+(comment  
+  (def x (subtree-leaves-first-itr '(+ 1 2 (* 3 4) x y (/ (plus a b) 6))))
+  (iterate-and-print x))
