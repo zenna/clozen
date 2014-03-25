@@ -367,6 +367,11 @@
   (vec (concat (subvec v 0 i)
                (subvec v (inc i)))))
 
+(defn transposev
+  "Transpsoe a matrix, which is an evenly sized vector of vectors"
+  [matrix]
+  (apply mapv vector matrix))
+
 ;; Map Helpers
 (defn extract
   "For list of maps, extract a key"
