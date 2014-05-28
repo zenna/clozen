@@ -9,7 +9,8 @@
                  [org.clojure/clojurescript "0.0-2030"]
                  [org.clojure/tools.macro "0.1.2"]
                  [incanter "1.4.1"]
-                 ]
+                 [clj-stacktrace          "0.2.6"]
+                 [fipp "0.4.2"]]
   :source-paths ["src/clj" "target/classes"]
   :cljx {:builds [{:source-paths ["src/cljx"]
                    :output-path "target/classes"

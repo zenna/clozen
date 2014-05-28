@@ -1,7 +1,8 @@
 (ns ^{:author "Zenna Tavares"
       :doc "Comparative (bucket) Testing"}
   clozen.profile.bucket
-  (:require [clozen.helpers :refer :all]))
+  (:require [clozen.helper-macros :refer :all]
+            [clozen.helpers :refer :all]))
 
 (defonce* bucket-config
  "This map atom controls store the state for bucket tetsing"
