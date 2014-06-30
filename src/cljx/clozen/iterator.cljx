@@ -1,20 +1,21 @@
 (ns ^{:doc "Iterators"
       :author "Zenna Tavares"}
   clozen.iterator
-  (:require [clozen.helpers :refer [repeat-until repeat-before-until]])
-  (:require [clozen.debug :refer [dbg]])
-  (:require [clojure.zip :as zip]))
+  (:require [clozen.helpers :refer [repeat-until repeat-before-until]]
+            [clojure.zip :as zip]))
 
 ;; Iterators
 (defprotocol Itr
   "This iterator is a purely functional version of an iterator ala C++
    The purpose is to abstract away the mechanics of iteration for better
    modularity.
+
    Suppose you have a pattern matching algorithm and you want to parameterise
    whether you are matching against every single node or just subgraphs.
    Iteration is done with (step iterator) which returns a new iterator,
    with some kind of pointer (this is a protocol so implementation details) to
    the next location.
+
    Since the iterator contains lots more information than you may want for
    any particular algorithm that uses it, we must use the realise function to
    get the actual value"
@@ -37,7 +38,7 @@
 ; Bad news is that 1. I might end up with long iterator names
 ; 2. If some algorithm requires two types of iteration, I'll need two iterators.
 ; Option 2: is have multiple protocols.
-; I choose Option 1 as it is simpler 
+; I choose Option 1 as it is simpler
 (defrecord SubtreeLeavesFirstItr
   ^{:doc
     "Iterates through all subtrees of an expression under constraint that
@@ -60,6 +61,7 @@
          (+ 3 4 (rand 0 1) (rand 3 4)), (rand 0 1), (rand 3 4)"}
   [tree zipped-tree])
 
+;; Factories ==================================================================
 (defn node-itr
   "Node iterator factory"
   [exp]
@@ -70,6 +72,7 @@
   [exp]
   (SubtreeItr. exp (zip/zipper coll? seq (fn [_ c] c) exp)))
 
+;; Protocol Implementations ===================================================
 (def abstract-zip-itr-impl
   "Abstract implementation for iterators built upon clojure/zip"
   {:step
@@ -134,7 +137,7 @@
             (cond
               (nil? (zip/up zipped-tree))
               (assoc zipped-tree 1 :end)
-              
+
               (nil? (zip/right zipped-tree))
               (zip/up zipped-tree)
 
@@ -145,7 +148,7 @@
 (defn subtree-leaves-first-itr
   "Subtree iterator factory"
   [exp]
-  (SubtreeLeavesFirstItr. exp 
+  (SubtreeLeavesFirstItr. exp
     (-> (zip/zipper coll? seq (fn [_ c] c) exp) zip/down go-to-next)))
 
 (defn add-itr-constraint
@@ -179,7 +182,7 @@
 (comment
   (def x (node-itr '(+ 1 2 (* 3 4) (+ 4 5 6) y (/ (plus a b) 6))))
   (def x (node-itr '(+ 1 2 3 (* 3 4))))
-  (def y (add-itr-constraint x #(seq? (dbg (realise %)))))  
+  (def y (add-itr-constraint x #(seq? (dbg (realise %)))))
   (def z (add-itr-constraint y #(= (dbg (count (realise %))) 30)));#(= (count %) 2)))
   (iterate-and-print (step z))
 
