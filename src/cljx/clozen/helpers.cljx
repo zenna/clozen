@@ -413,6 +413,25 @@
      coll)
      1))
 
+(defn unsplit
+  "Having split a vector using split-with-pos (or some other means)
+   We might want to put things back together again in correct order
+
+   (apply unsplit (split-with-pos odd? [492 1 8 2 0 3 5]))
+   => [492 1 8 2 0 3 5]"
+  [a b c d]
+  {:pre [(count= a c)
+         (count= b d)]}
+  (let [res (vec (zeros (+ (count a) (count b))))
+        f
+        (fn [res pos v]
+        (loop [res res v v pos pos]
+          (if (seq pos)
+              (recur (assoc res (first pos) (first v)) (next v) (next pos))
+              res)))]
+    (-> res (f c a) (f d b))))
+
+
 ;; ===========
 ;; Map Helpers
 (defn extract

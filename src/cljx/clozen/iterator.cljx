@@ -62,15 +62,28 @@
   [tree zipped-tree])
 
 ;; Factories ==================================================================
+(defn hetero-zipper
+  "Zipper for both vectors and lists
+   Avoids bug of replacing nested element and parent changing from vector to list"
+  [exp]
+  (zip/zipper
+   coll?
+   seq
+   (fn [node c]
+     (if (vector? node)
+         (vec c)
+         c))
+   exp))
+
 (defn node-itr
   "Node iterator factory"
   [exp]
-  (NodeItr. exp (zip/zipper coll? seq (fn [_ c] c) exp)))
+  (NodeItr. exp (hetero-zipper exp)))
 
 (defn subtree-itr
   "Subtree iterator factory"
   [exp]
-  (SubtreeItr. exp (zip/zipper coll? seq (fn [_ c] c) exp)))
+  (SubtreeItr. exp (hetero-zipper exp)))
 
 ;; Protocol Implementations ===================================================
 (def abstract-zip-itr-impl
@@ -149,7 +162,7 @@
   "Subtree iterator factory"
   [exp]
   (SubtreeLeavesFirstItr. exp
-    (-> (zip/zipper coll? seq (fn [_ c] c) exp) zip/down go-to-next)))
+    (-> (hetero-zipper exp) zip/down go-to-next)))
 
 (defn add-itr-constraint
   "Adds a constraint to the iterator
